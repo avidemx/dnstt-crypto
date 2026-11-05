@@ -59,7 +59,6 @@ int dnstt_hmac_blake2s(uint8_t out[32], const void *key, size_t kl, const void *
  if(!out || (!key && kl) || (!data && dl)) return DNSTT_CRYPTO_ERR;
  if(kl>64) { if(dnstt_blake2s(k,key,kl)) return -1; kl=32; } else if(kl) memcpy(k,key,kl);
  for(i=0;i<64;i++) { ipad[i]=k[i]^0x36; opad[i]=k[i]^0x5c; }
- buf=(uint8_t *)0;
  if(dl > (size_t)-1-64) return -1;
  buf=(uint8_t *)malloc(64+dl); if(!buf) return -1;
  memcpy(buf,ipad,64); if(dl) memcpy(buf+64,data,dl);
@@ -68,9 +67,9 @@ int dnstt_hmac_blake2s(uint8_t out[32], const void *key, size_t kl, const void *
  memset(k,0,sizeof k); memset(inner,0,sizeof inner); return 0;
 }
 int dnstt_hkdf_blake2s(uint8_t *out, size_t ol, const void *ikm, size_t il, const void *salt, size_t sl, const void *info, size_t nl) {
- uint8_t prk[32], t[32], *buf; size_t done=0, tl=0; unsigned ctr=1;
+ uint8_t prk[32], t[32], zeros[32]={0}, *buf; size_t done=0, tl=0; unsigned ctr=1;
  if((!out && ol)||(!ikm&&il)||(!salt&&sl)||(!info&&nl)||ol>255U*32U) return -1;
- { uint8_t zeros[32]={0}; if(!sl) { salt=zeros; sl=32; } }
+ if(!sl) { salt=zeros; sl=sizeof zeros; }
  if(dnstt_hmac_blake2s(prk,salt,sl,ikm,il)) return -1;
  if(nl > (size_t)-1-33) return -1;
  buf=(uint8_t *)malloc(32+nl+1); if(!buf) return -1;
@@ -82,5 +81,5 @@ int dnstt_hkdf_blake2s(uint8_t *out, size_t ol, const void *ikm, size_t il, cons
   { size_t n=ol-done; if(n>32)n=32; memcpy(out+done,t,n); done+=n; }
   ctr++;
  }
- memset(prk,0,sizeof prk); memset(t,0,sizeof t); memset(buf,0,32+nl+1); free(buf); return 0;
+ memset(prk,0,sizeof prk); memset(t,0,sizeof t); memset(zeros,0,sizeof zeros); memset(buf,0,32+nl+1); free(buf); return 0;
 }
