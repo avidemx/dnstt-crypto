@@ -2,7 +2,6 @@ CC ?= $(CROSS_COMPILE)gcc
 STRIP ?= $(CROSS_COMPILE)strip
 CFLAGS ?= -O2 -Wall -Wextra -Werror
 CFLAGS += -std=c99 -fPIC -Iinclude
-LDFLAGS += -ldl
 
 .PHONY: all clean test
 all: dnstt-crypto
