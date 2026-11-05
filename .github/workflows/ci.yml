@@ -1,4 +1,4 @@
-name: CI
+name: OpenWrt 25 x86_64 build
 
 on:
   push:
@@ -8,15 +8,39 @@ on:
   workflow_dispatch:
 
 jobs:
-  native:
-    runs-on: ubuntu-latest
+  openwrt-25-x86-64:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Build
-        run: make clean all
-      - name: Test BLAKE2s vectors
-        run: make test
-      - name: Check dynamic OpenSSL symbols
+
+      - name: Download OpenWrt 25.12.5 x86/64 toolchain
         run: |
-          ldd ./dnstt-crypto
-          nm -u ./dnstt-crypto
+          set -eux
+          TOOLCHAIN="openwrt-toolchain-25.12.5-x86-64_gcc-14.3.0_musl.Linux-x86_64.tar.zst"
+          URL="https://downloads.openwrt.org/releases/25.12.5/targets/x86/64/$TOOLCHAIN"
+          curl -fL "$URL" -o /tmp/toolchain.tar.zst
+          mkdir -p "$RUNNER_TEMP/openwrt-toolchain"
+          tar --zstd -xf /tmp/toolchain.tar.zst -C "$RUNNER_TEMP/openwrt-toolchain"
+          find "$RUNNER_TEMP/openwrt-toolchain" -type f -name '*-openwrt-linux-musl-gcc' -print
+
+      - name: Build for OpenWrt 25 x86_64
+        run: |
+          set -eux
+          CC="$(find "$RUNNER_TEMP/openwrt-toolchain" -type f -name '*-openwrt-linux-musl-gcc' | head -n 1)"
+          test -n "$CC"
+          make clean
+          make CC="$CC" STRIP="$(dirname "$CC")/*-strip"
+          file ./dnstt-crypto
+          readelf -l ./dnstt-crypto | grep 'interpreter'
+
+      - name: Package binary
+        run: |
+          mkdir -p dist
+          cp dnstt-crypto dist/dnstt-crypto-openwrt-25.12-x86_64
+          sha256sum dist/* > dist/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dnstt-crypto-openwrt-25.12-x86_64
+          path: dist/
+          if-no-files-found: error
