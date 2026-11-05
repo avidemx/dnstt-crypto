@@ -15,6 +15,7 @@ static void *handle;
 #define LOAD(name) static __typeof__(name##_impl) *p_##name
 /* Keep OpenSSL types opaque: no OpenSSL development headers are needed. */
 static EVP_PKEY *(*p_new_raw_private)(void *, const char *, const char *, const unsigned char *, size_t);
+static EVP_PKEY *(*p_new_raw_public)(void *, const char *, const char *, const unsigned char *, size_t);
 static int (*p_get_raw_public)(const EVP_PKEY *, unsigned char *, size_t *);
 static EVP_PKEY_CTX *(*p_pkey_ctx_new)(EVP_PKEY *, void *);
 static int (*p_derive_init)(EVP_PKEY_CTX *);
@@ -40,6 +41,7 @@ static int load_crypto(void) {
  if(!handle) handle=dlopen("/usr/lib/libcrypto.so.3",RTLD_NOW|RTLD_LOCAL);
  if(!handle) return -1;
  SYM(p_new_raw_private,"EVP_PKEY_new_raw_private_key_ex");
+ SYM(p_new_raw_public,"EVP_PKEY_new_raw_public_key_ex");
  SYM(p_get_raw_public,"EVP_PKEY_get_raw_public_key");
  SYM(p_pkey_ctx_new,"EVP_PKEY_CTX_new_from_pkey");
  SYM(p_derive_init,"EVP_PKEY_derive_init");
@@ -70,7 +72,7 @@ int dnstt_x25519(uint8_t out[32], const uint8_t priv[32], const uint8_t peer[32]
  EVP_PKEY *a=NULL,*b=NULL; EVP_PKEY_CTX *c=NULL; size_t n=32; int rc=-1;
  if(!out||!priv||!peer||load_crypto())return -1;
  a=p_new_raw_private(NULL,"X25519",NULL,priv,32);
- b=p_new_raw_private(NULL,"X25519",NULL,peer,32);
+ b=p_new_raw_public(NULL,"X25519",NULL,peer,32);
  if(!a||!b)goto done;
  c=p_pkey_ctx_new(a,NULL); if(!c)goto done;
  if(p_derive_init(c)!=1||p_derive_peer(c,b)!=1||p_derive(c,out,&n)!=1||n!=32)goto done;
