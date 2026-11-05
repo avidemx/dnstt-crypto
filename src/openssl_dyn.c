@@ -12,12 +12,10 @@ typedef struct evp_cipher_st EVP_CIPHER;
 typedef struct evp_cipher_ctx_st EVP_CIPHER_CTX;
 
 static void *handle;
-#define LOAD(name) static __typeof__(name##_impl) *p_##name
-/* Keep OpenSSL types opaque: no OpenSSL development headers are needed. */
 static EVP_PKEY *(*p_new_raw_private)(void *, const char *, const char *, const unsigned char *, size_t);
 static EVP_PKEY *(*p_new_raw_public)(void *, const char *, const char *, const unsigned char *, size_t);
 static int (*p_get_raw_public)(const EVP_PKEY *, unsigned char *, size_t *);
-static EVP_PKEY_CTX *(*p_pkey_ctx_new)(EVP_PKEY *, void *);
+static EVP_PKEY_CTX *(*p_pkey_ctx_new)(void *, EVP_PKEY *, const char *);
 static int (*p_derive_init)(EVP_PKEY_CTX *);
 static int (*p_derive_peer)(EVP_PKEY_CTX *, EVP_PKEY *);
 static int (*p_derive)(EVP_PKEY_CTX *, unsigned char *, size_t *);
@@ -74,7 +72,7 @@ int dnstt_x25519(uint8_t out[32], const uint8_t priv[32], const uint8_t peer[32]
  a=p_new_raw_private(NULL,"X25519",NULL,priv,32);
  b=p_new_raw_public(NULL,"X25519",NULL,peer,32);
  if(!a||!b)goto done;
- c=p_pkey_ctx_new(a,NULL); if(!c)goto done;
+ c=p_pkey_ctx_new(NULL,a,NULL); if(!c)goto done;
  if(p_derive_init(c)!=1||p_derive_peer(c,b)!=1||p_derive(c,out,&n)!=1||n!=32)goto done;
  rc=0;
  done: if(c)p_pkey_ctx_free(c); if(a)p_pkey_free(a); if(b)p_pkey_free(b);
