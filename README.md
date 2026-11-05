@@ -57,6 +57,14 @@ For decryption, plaintext is printed only after tag verification succeeds.
 
 See `include/dnstt_crypto.h`.
 
+## Validation notes
+
+- ChaCha20-Poly1305 supports empty plaintext and empty ciphertext while preserving the
+  16-byte authentication tag. The AEAD implementation resets the output-length
+  counter after AAD processing so AAD length is never mistaken for payload length.
+- Empty and non-empty AEAD round trips have been tested through the LuaJIT FFI
+  wrapper on OpenWrt.
+
 ## Security notes
 
 - Callers must keep private keys and intermediate secrets out of logs.
