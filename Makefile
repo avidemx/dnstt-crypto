@@ -14,7 +14,7 @@ src/%.o: src/%.c include/dnstt_crypto.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 test: dnstt-crypto
-	./tests/smoke.sh ./dnstt-crypto
+	sh ./tests/smoke.sh ./dnstt-crypto
 
 clean:
 	rm -f src/*.o dnstt-crypto
