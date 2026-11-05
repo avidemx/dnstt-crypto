@@ -106,8 +106,12 @@ int dnstt_x25519_public(uint8_t out[32], const uint8_t priv[32]) {
     size_t n = 32;
     int rc = -1;
 
-    if (!out || !priv || load_crypto())
+    if (!out || !priv)
         return -1;
+    if (load_crypto()) {
+        memset(out, 0, 32);
+        return -1;
+    }
 
     k = p_new_raw_private(NULL, "X25519", NULL, priv, 32);
     if (!k)
@@ -130,8 +134,12 @@ int dnstt_x25519(uint8_t out[32], const uint8_t priv[32], const uint8_t peer[32]
     size_t n = 32;
     int rc = -1;
 
-    if (!out || !priv || !peer || load_crypto())
+    if (!out || !priv || !peer)
         return -1;
+    if (load_crypto()) {
+        memset(out, 0, 32);
+        return -1;
+    }
 
     a = p_new_raw_private(NULL, "X25519", NULL, priv, 32);
     b = p_new_raw_public(NULL, "X25519", NULL, peer, 32);
