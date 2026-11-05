@@ -14,8 +14,8 @@ cross-builds, and interoperability tests pass.
 - BLAKE2s-256 is implemented locally (RFC 7693).
 - HMAC-BLAKE2s and HKDF-BLAKE2s are built on that hash implementation.
 - X25519 and ChaCha20-Poly1305 use OpenSSL 3 through runtime symbol loading.
-- The executable links only to the platform C runtime and `libdl`; OpenSSL headers
-  and link-time development symlinks are not required.
+- On OpenWrt/musl, `dlopen()` is provided by the C runtime, so no `-ldl` or
+  OpenSSL development package is needed at link time.
 - Runtime X25519/AEAD operations require `libcrypto.so.3`.
 
 ## Build
@@ -61,6 +61,8 @@ See `include/dnstt_crypto.h`.
 
 - Callers must keep private keys and intermediate secrets out of logs.
 - The decrypt API clears the output buffer on authentication failure.
+- The current OpenSSL symbol loader is intended for serialized calls (as in a
+  single Lua state); concurrent first-time initialization is not synchronized.
 - The Lua caller must not consume plaintext unless the decrypt function succeeds.
 - The helper currently accepts hex through argv; avoid passing secrets on shared
   multi-user systems where process arguments may be observable.
