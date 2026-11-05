@@ -1,5 +1,6 @@
 #include "dnstt_crypto.h"
 #include <string.h>
+#include <stdlib.h>
 
 static const uint32_t iv[8] = {
   0x6A09E667,0xBB67AE85,0x3C6EF372,0xA54FF53A,
@@ -60,9 +61,9 @@ int dnstt_hmac_blake2s(uint8_t out[32], const void *key, size_t kl, const void *
  for(i=0;i<64;i++) { ipad[i]=k[i]^0x36; opad[i]=k[i]^0x5c; }
  buf=(uint8_t *)0;
  if(dl > (size_t)-1-64) return -1;
- buf=(uint8_t *)__builtin_malloc(64+dl); if(!buf) return -1;
+ buf=(uint8_t *)malloc(64+dl); if(!buf) return -1;
  memcpy(buf,ipad,64); if(dl) memcpy(buf+64,data,dl);
- dnstt_blake2s(inner,buf,64+dl); __builtin_free(buf);
+ dnstt_blake2s(inner,buf,64+dl); free(buf);
  { uint8_t outer[96]; memcpy(outer,opad,64); memcpy(outer+64,inner,32); dnstt_blake2s(out,outer,sizeof outer); memset(outer,0,sizeof outer); }
  memset(k,0,sizeof k); memset(inner,0,sizeof inner); return 0;
 }
@@ -72,12 +73,14 @@ int dnstt_hkdf_blake2s(uint8_t *out, size_t ol, const void *ikm, size_t il, cons
  { uint8_t zeros[32]={0}; if(!sl) { salt=zeros; sl=32; } }
  if(dnstt_hmac_blake2s(prk,salt,sl,ikm,il)) return -1;
  if(nl > (size_t)-1-33) return -1;
- buf=(uint8_t *)__builtin_malloc(32+nl+1); if(!buf) return -1;
+ buf=(uint8_t *)malloc(32+nl+1); if(!buf) return -1;
  while(done<ol) {
-  if(tl) memcpy(buf,t,tl); if(nl) memcpy(buf+tl,info,nl); buf[tl+nl]=(uint8_t)ctr;
+  if(tl) memcpy(buf,t,tl);
+  if(nl) memcpy(buf+tl,info,nl);
+  buf[tl+nl]=(uint8_t)ctr;
   dnstt_hmac_blake2s(t,prk,32,buf,tl+nl+1); tl=32;
   { size_t n=ol-done; if(n>32)n=32; memcpy(out+done,t,n); done+=n; }
   ctr++;
  }
- memset(prk,0,sizeof prk); memset(t,0,sizeof t); memset(buf,0,32+nl+1); __builtin_free(buf); return 0;
+ memset(prk,0,sizeof prk); memset(t,0,sizeof t); memset(buf,0,32+nl+1); free(buf); return 0;
 }
