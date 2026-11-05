@@ -185,10 +185,23 @@ static int aead(int enc, uint8_t *out, uint8_t tag[16],
     int n = 0, total = 0, rc = -1;
     uint8_t finalbuf[16];
 
+    /*
+     * On every decryption failure, clear the caller's plaintext buffer,
+     * including failures detected before an EVP context is created.
+     */
     if (!out || !tag || !key || !nonce ||
         (!aad && al) || (!in && il) ||
-        al > INT_MAX || il > INT_MAX || load_crypto())
+        al > INT_MAX || il > INT_MAX) {
+        if (!enc && out && il)
+            memset(out, 0, il);
         return -1;
+    }
+
+    if (load_crypto()) {
+        if (!enc && il)
+            memset(out, 0, il);
+        return -1;
+    }
 
     c = p_cipher_ctx_new();
     if (!c)
