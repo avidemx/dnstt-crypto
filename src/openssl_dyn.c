@@ -222,15 +222,29 @@ static int aead(int enc, uint8_t *out, uint8_t tag[16],
              : p_decrypt_init(c, NULL, NULL, NULL, nonce)) != 1)
         goto done;
 
-    if (al && (enc ? p_encrypt_update(c, NULL, &n, aad, (int)al)
-                   : p_decrypt_update(c, NULL, &n, aad, (int)al)) != 1)
-        goto done;
+    if (al) {
+        n = 0;
+        if ((enc ? p_encrypt_update(c, NULL, &n, aad, (int)al)
+                 : p_decrypt_update(c, NULL, &n, aad, (int)al)) != 1)
+            goto done;
+    }
 
-    if (il && (enc ? p_encrypt_update(c, out, &n, in, (int)il)
-                   : p_decrypt_update(c, out, &n, in, (int)il)) != 1)
-        goto done;
+    /*
+     * AAD processing does not contribute to ciphertext/plaintext length.
+     * Explicitly reset n so empty payloads are handled correctly.
+     */
+    n = 0;
+    total = 0;
 
-    total = n;
+    if (il) {
+        if ((enc ? p_encrypt_update(c, out, &n, in, (int)il)
+                 : p_decrypt_update(c, out, &n, in, (int)il)) != 1)
+            goto done;
+
+        total = n;
+    }
+
+    n = 0;
 
     if (!enc && p_cipher_ctrl(c, 0x11, 16, tag) != 1)
         goto done;
