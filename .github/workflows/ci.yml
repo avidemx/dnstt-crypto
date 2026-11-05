@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: make clean all
+      - name: Test BLAKE2s vectors
+        run: make test
+      - name: Check dynamic OpenSSL symbols
+        run: |
+          ldd ./dnstt-crypto
+          nm -u ./dnstt-crypto
